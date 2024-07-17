@@ -5,6 +5,7 @@ import os
 import tkinter as tk
 import time
 from PIL import Image, ImageTk
+from functools import partial
 
 customtkinter.set_default_color_theme("green")
 customtkinter.set_appearance_mode("dark")
@@ -24,6 +25,22 @@ def display_files_in_marker(marker):
         messageFiles = "No folder path associated with this marker."
     messagebox.showinfo(title="Marker Info", message=message+messageFiles)
 
+
+def show_tooltip(widget, text):
+    x, y, _, _ = widget.bbox("all")
+    x += widget.winfo_rootx() + widget.winfo_width() // 2
+    y += widget.winfo_rooty() + widget.winfo_height() // 2
+
+    tooltip = tk.Toplevel(widget)
+    tooltip.wm_overrideredirect(True)
+    tooltip.wm_geometry(f"+{x}+{y}")
+    
+    label = tk.Label(tooltip, text=text, background="#ffffe0", relief="solid", borderwidth=1)
+    label.pack(padx=5, pady=2)
+
+def hide_tooltip(widget):
+    for child in widget.winfo_children():
+        child.destroy()
 
 class App(customtkinter.CTk):
     APP_NAME = "Vectrino Mapa"
@@ -127,9 +144,22 @@ class App(customtkinter.CTk):
                 # Create a new window to display the images
                 window = tk.Toplevel(self)
                 window.title("Selected Images")
+
+                  # Calculate the number of rows and columns for thumbnails
+                num_images = len(selected_images)
+                num_columns = 4  # Adjust the number of columns as desired
+                num_rows = (num_images + num_columns - 1) // num_columns
+
+                 # Calculate the canvas width and height based on thumbnail size and number of rows/columns
+                thumbnail_width = 300  # Adjust the thumbnail width as needed
+                thumbnail_height = 300  # Adjust the thumbnail height as needed
+                canvas_width = num_columns * thumbnail_width
+                canvas_height = num_rows * thumbnail_height
+            
                 
                 # Create a scrollable canvas to hold the image thumbnails
-                canvas = tk.Canvas(window, borderwidth=0, background="#ffffff")
+                  # Create a scrollable canvas to hold the image thumbnails
+                canvas = tk.Canvas(window, width=canvas_width, height=canvas_height, borderwidth=0, background="#ffffff")
                 scrollbar = tk.Scrollbar(window, orient="vertical", command=canvas.yview)
                 canvas.configure(yscrollcommand=scrollbar.set)
                 
@@ -142,33 +172,52 @@ class App(customtkinter.CTk):
                 scrollbar.pack(side="right", fill="y")
                 
                 # Load and display the image thumbnails
-                for image_path in selected_images:
+                for i, image_path in enumerate(selected_images):
                     image = Image.open(image_path)
-                    thumbnail_size = (200, 200)  # Adjust the thumbnail size as needed
+                    thumbnail_size = (300, 300)  # Adjust the thumbnail size as needed
                     image.thumbnail(thumbnail_size)
                     photo = ImageTk.PhotoImage(image)
+                    
+                     # Create a clickable label for the thumbnail
                     label = tk.Label(frame, image=photo)
                     label.image = photo  # Keep a reference to prevent garbage collection
-                    label.pack(side="left", padx=10, pady=10)
+                    
+                    # Bind a callback function to the label click event
+                    callback = partial(self.display_full_image, image_path)
+                    label.bind("<Button-1>", lambda event, cb=callback: cb())
+
+                    # Create tooltips for image names
+                    label.bind("<Enter>", lambda event, text=image_path: show_tooltip(label, text))
+                    label.bind("<Leave>", lambda event: hide_tooltip(label))
+                    
+                    # label.pack(side="left", padx=10, pady=10)
+
+                     # Calculate the grid column and row positions
+                    col = i % num_columns
+                    row = i // num_columns
+                    
+                    # Use grid to position the label in the frame
+                    label.grid(row=row, column=col, padx=10, pady=10)
+
             else:
                 messagebox.showwarning("No Images Selected", "No images were selected.")
         else:
             messagebox.showwarning("No Images Selected", "No images were selected.")
 
 
-        def display_full_image(image_path):
-            # Create a new window to display the full image
-            window = tk.Toplevel()
-            window.title("Full Image")
-            
-            # Load the full image
-            image = Image.open(image_path)
-            photo = ImageTk.PhotoImage(image)
-            
-            # Create a label to display the full image
-            label = tk.Label(window, image=photo)
-            label.image = photo  # Keep a reference to prevent garbage collection
-            label.pack()
+    def display_full_image(self,  image_path):
+        # Create a new window to display the full image
+        window = tk.Toplevel()
+        window.title(image_path)
+        
+        # Load the full image
+        image = Image.open(image_path)
+        photo = ImageTk.PhotoImage(image)
+        
+        # Create a label to display the full image
+        label = tk.Label(window, image=photo)
+        label.image = photo  # Keep a reference to prevent garbage collection
+        label.pack()
 
 
     def change_layer(self):
