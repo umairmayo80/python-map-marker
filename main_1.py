@@ -5,17 +5,12 @@ import os
 import tkinter as tk
 from PIL import Image, ImageTk
 from functools import partial
-from tkinter import ttk
+
 
 customtkinter.set_default_color_theme("green")
 customtkinter.set_appearance_mode("dark")
 
-# Define the button style
-style = ttk.Style()
-style.configure("TButton", font=("Arial", 12))
 
-# Configure the style for the "View Images" button
-style.configure("ViewImages.TButton", background="#2196F3", foreground="white")
 
 # Define the button colors
 view_images_button_color = "#2196F3"  # Material Design blue
@@ -214,6 +209,7 @@ class App(customtkinter.CTk):
 
                 # Create the Delete Polygon button
                 delete_polygon_button = tk.Button(buttons_frame, text="Delete Polygon", font=("Arial", 12),
+                                                  bg=delete_polygon_button_color,
                                                   command=lambda: delete_polygon(polygon))
                 delete_polygon_button.pack(side="left", padx=5)
             else:
